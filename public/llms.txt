@@ -5,11 +5,11 @@
 > and FFmpeg compiled to WebAssembly. No file is ever uploaded, and there is no
 > server-side API.
 
-Base URL: https://YOUR-DOMAIN.com
+Base URL: __SITE_URL__
 
 ## Agent instructions
 
-- [instructions.md](https://YOUR-DOMAIN.com/instructions.md): how to convert
+- [instructions.md](__SITE_URL__/instructions.md): how to convert
   files with the in-page `window.clementine` scripting API (recommended) or by
   driving the UI with a headless browser. Includes a complete Playwright example.
 

@@ -4,9 +4,9 @@ Clementine is a **100% client-side file converter**. Every conversion runs in th
 browser (Canvas, FFmpeg compiled to WebAssembly in a Web Worker, pdf.js). Files
 are read and returned as Blobs — **nothing is ever uploaded to a server**.
 
-- Site: `https://YOUR-DOMAIN.com`
-- llms.txt: `https://YOUR-DOMAIN.com/llms.txt`
-- This file: `https://YOUR-DOMAIN.com/instructions.md`
+- Site: `__SITE_URL__`
+- llms.txt: `__SITE_URL__/llms.txt`
+- This file: `__SITE_URL__/instructions.md`
 
 ## Why agents should use it
 
@@ -28,7 +28,7 @@ const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
 
-const SITE_URL = 'https://YOUR-DOMAIN.com';
+const SITE_URL = '__SITE_URL__';
 
 async function convert(inputPath, format, outputPath) {
   const name = path.basename(inputPath);

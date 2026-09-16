@@ -53,6 +53,21 @@ Output is in `dist/` — deploy anywhere (static host, CDN, etc.). To preview th
 npm run preview
 ```
 
+### Setting the public URL
+
+The generated `/llms.txt` and `/instructions.md` contain the site's base URL.
+It is injected at build time from `VITE_SITE_URL`, so set it wherever you build
+(this works on any host, including a VPS):
+
+```bash
+cp .env.example .env   # then set VITE_SITE_URL=https://your-domain.com
+npm run build
+# or pass it inline:
+VITE_SITE_URL=https://your-domain.com npm run build
+```
+
+When `VITE_SITE_URL` is unset it falls back to `http://localhost:3000`.
+
 ### Cross-origin isolation (optional, recommended)
 
 The multithreaded FFmpeg core is used automatically when the page is
