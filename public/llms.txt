@@ -1,17 +1,39 @@
 # Clementine
 
 > Clementine is a 100% client-side file converter. Images, audio, video,
-> documents and subtitles are converted entirely in the browser using Canvas,
-> WebCodecs (where available) and FFmpeg compiled to WebAssembly. No file is
-> ever uploaded, and there is no server-side API.
+> documents and subtitles are converted entirely in the browser using Canvas
+> and FFmpeg compiled to WebAssembly. No file is ever uploaded, and there is no
+> server-side API.
 
 Base URL: https://YOUR-DOMAIN.com
 
 ## Agent instructions
 
-- [instructions.md](https://YOUR-DOMAIN.com/instructions.md): how to drive the
-  site with a headless browser (Playwright) to convert files, including stable
-  selectors and a complete example.
+- [instructions.md](https://YOUR-DOMAIN.com/instructions.md): how to convert
+  files with the in-page `window.clementine` scripting API (recommended) or by
+  driving the UI with a headless browser. Includes a complete Playwright example.
+
+### Scripting API
+
+The page exposes `window.clementine`:
+
+- `window.clementine.version` — API version string
+- `window.clementine.categories()` — supported categories and formats
+- `window.clementine.formats(fileName)` — valid output formats for a file
+- `window.clementine.warmup()` — preload the audio/video engine
+- `window.clementine.convertBase64({ base64, name, format })` — convert and
+  return `{ name, mimeType, size, base64 }`
+
+```js
+await page.waitForFunction(() => !!window.clementine?.version);
+const out = await page.evaluate(
+  (i) => window.clementine.convertBase64(i),
+  { base64, name: 'photo.jpg', format: 'png' },
+);
+```
+
+There is no HTTP endpoint; use a headless browser (Playwright/Puppeteer) to run
+the JavaScript API in the page.
 
 ## Supported conversions
 
@@ -22,12 +44,6 @@ Base URL: https://YOUR-DOMAIN.com
   MP3
 - Documents: `.pdf` `.docx` `.txt` → TXT, PDF, PNG pages, JPG pages
 - Subtitles: `.srt` `.vtt` → SRT, VTT, TXT
-
-## Usage
-
-There is no HTTP endpoint. Automate the UI with a headless browser; see
-[instructions.md](https://YOUR-DOMAIN.com/instructions.md) for a working
-Playwright example and the list of stable selectors.
 
 ## Privacy
 

@@ -1,13 +1,6 @@
 import { useCallback, useState } from 'react';
-import {
-  convertAudio,
-  convertDocument,
-  convertImage,
-  convertSubtitle,
-  convertVideo,
-  type ConvertResult,
-} from '../converters';
-import { getCategoryForFile, type FormatOption } from '../types';
+import type { FormatOption } from '../types';
+import { convertFile } from '../lib/convertFile';
 
 export type ConversionStatus = 'idle' | 'converting' | 'done' | 'error';
 
@@ -20,7 +13,7 @@ export interface ConversionState {
 }
 
 interface UseConversionOptions {
-  ffmpeg: any | null;
+  ffmpeg: unknown | null;
   ffmpegLoading: boolean;
 }
 
@@ -37,56 +30,29 @@ export function useConversion({ ffmpeg, ffmpegLoading }: UseConversionOptions) {
 
   const isFFmpegReady = !!ffmpeg && !ffmpegLoading;
 
-  const convert = useCallback(
-    async (file: File, format: FormatOption) => {
-      setState({ ...IDLE, status: 'converting' });
+  const convert = useCallback(async (file: File, format: FormatOption) => {
+    setState({ ...IDLE, status: 'converting' });
 
-      const onProgress = (progress: number) =>
-        setState((s) => ({ ...s, progress: Math.max(0, Math.min(100, progress)) }));
+    const onProgress = (progress: number) =>
+      setState((s) => ({ ...s, progress: Math.max(0, Math.min(100, progress)) }));
 
-      try {
-        const category = getCategoryForFile(file.name);
-        let result: ConvertResult;
-
-        switch (category) {
-          case 'image':
-            result = await convertImage(file, format, onProgress);
-            break;
-          case 'audio':
-            if (!isFFmpegReady) throw new Error('Conversion engine is not ready yet');
-            result = await convertAudio(file, ffmpeg, format, onProgress);
-            break;
-          case 'video':
-            if (!isFFmpegReady) throw new Error('Conversion engine is not ready yet');
-            result = await convertVideo(file, ffmpeg, format, onProgress);
-            break;
-          case 'document':
-            result = await convertDocument(file, format, onProgress);
-            break;
-          case 'subtitle':
-            result = await convertSubtitle(file, format, onProgress);
-            break;
-          default:
-            throw new Error('This file type is not supported');
-        }
-
-        setState({
-          status: 'done',
-          progress: 100,
-          error: null,
-          outputBlob: result.blob,
-          outputName: result.name,
-        });
-      } catch (e) {
-        setState({
-          ...IDLE,
-          status: 'error',
-          error: e instanceof Error ? e.message : 'Conversion failed',
-        });
-      }
-    },
-    [ffmpeg, isFFmpegReady],
-  );
+    try {
+      const result = await convertFile(file, format, onProgress);
+      setState({
+        status: 'done',
+        progress: 100,
+        error: null,
+        outputBlob: result.blob,
+        outputName: result.name,
+      });
+    } catch (e) {
+      setState({
+        ...IDLE,
+        status: 'error',
+        error: e instanceof Error ? e.message : 'Conversion failed',
+      });
+    }
+  }, []);
 
   const reset = useCallback(() => setState(IDLE), []);
 

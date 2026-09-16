@@ -68,9 +68,14 @@ transparently falls back to the single-threaded core — no configuration needed
 
 ## Agent access
 
-- `/instructions.md` — how to drive the site with a headless browser (Playwright),
-  including stable selectors and a full example
+- `window.clementine` — in-page scripting API so agents can convert without
+  clicking DOM elements:
+  - `convert(file, format)` / `convertBase64({ base64, name, format })`
+  - `convertToDataUrl(file, format)`
+  - `formats(fileName)`, `categories()`, `categoryOf(fileName)`
+  - `warmup()`, `engineReady()`, `version`
+- `/instructions.md` — full API reference and a complete Playwright example
 - `/llms.txt` — machine-readable index of supported conversions and endpoints
 
-Agents can also automate file drops, format selection, and downloads via
-Playwright/Puppeteer DOM interaction.
+There is no HTTP endpoint (processing is client-side), so automation runs the
+JavaScript API inside a headless browser and passes files as base64.
