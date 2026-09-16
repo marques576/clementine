@@ -62,6 +62,7 @@ export default function DropZone({ onFilesDropped, disabled }: DropZoneProps) {
       } ${disabled ? 'pointer-events-none opacity-50' : ''}`}
     >
       <input ref={inputRef} type="file" className="hidden" onChange={handleInputChange} />
+      <p className="mb-3 text-xs font-medium text-neutral-500">For humans:</p>
       <div className="mb-2 text-3xl">📂</div>
       <p className="font-medium text-neutral-800">Drop a file here</p>
       <p className="mt-1 text-sm text-neutral-500">or click to browse</p>
