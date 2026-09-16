@@ -3,7 +3,9 @@ dist/
 .DS_Store
 dev.log
 *.log
-screenshot.png
+# Screenshots for README
+!.gitkeep
+!screenshot.png
 __pycache__/
 .env
 .env*

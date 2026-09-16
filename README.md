@@ -15,6 +15,14 @@ Clementine is an open-source alternative to Tangerine for Mac. It's a browser-ba
 - **No install**: Runs as a web app, no downloads required
 - **Open source**: MIT licensed
 
+## Screenshots
+
+### Landing Page — Drag & Drop
+
+![Landing page with drag and drop zone](screenshot-dropzone.png)
+
+Drop any file onto the page to begin converting. No accounts, no uploads — everything runs in your browser.
+
 ## Tech Stack
 
 - Vite + React + TypeScript
@@ -31,7 +39,7 @@ npm install
 npm run dev
 ```
 
-The app serves on `http://localhost:3000`.
+The app serves on `http://localhost:3001`.
 
 ## Building for Production
 
@@ -39,8 +47,12 @@ The app serves on `http://localhost:3000`.
 npm run build
 ```
 
-Output is in `dist/` — deploy anywhere (static host, CDN, etc.).
+Output is in `dist/` — deploy anywhere (static host, CDN, etc.). To preview the production build locally:
+
+```bash
+cd dist && python3 -m http.server 3001
+```
 
 ## Agent API
 
-See `/llm.txt` for programmatic access instructions for AI agents.
+See `/llm.txt` for programmatic access instructions for AI agents. Agents can automate file drops, format selection, and downloads via Playwright/Puppeteer DOM interaction.
