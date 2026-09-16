@@ -1,0 +1,99 @@
+# Clementine — Agent Interaction Guide
+
+## Overview
+Clementine is a browser-based, zero-backend file converter. All processing happens via WebAssembly (FFmpeg.wasm) and Canvas API inside the user's browser. No server is required or exists.
+
+## Website URL
+```
+http://localhost:3000
+```
+(After running `npm install && npm run dev` in the `clementine/` directory)
+
+## Supported Conversions
+
+| Category | Input Formats | Output Formats |
+|----------|--------------|----------------|
+| Images | JPG, PNG, WebP, HEIC, TIFF, BMP, AVIF, GIF, SVG | PNG, JPG, WebP, AVIF, BMP, TIFF, SVG, GIF |
+| Audio | MP3, M4A, WAV, FLAC, OGG, Opus, AIFF, WMA | MP3, M4A, WAV, FLAC, OGG, Opus |
+| Video | MP4, MOV, MKV, WebM, AVI, WMV, GIF | MP4, MOV, MKV, WebM, AVI, WMV, GIF, MP3 |
+| Documents | PDF, DOCX, TXT | PDF, DOCX, TXT, JPG (pages), PNG (pages) |
+| Subtitles | SRT, VTT, TXT | SRT, VTT, TXT |
+| Archives | ZIP, TAR, GZIP, RAR | ZIP, TAR, GZIP |
+
+## Agent API (Web Automation)
+
+Clementine has no HTTP API — it is a client-side web app. Agents interact with it via browser automation (e.g., Playwright, Puppeteer).
+
+### Conversion Workflow for Agents
+
+1. **Navigate** to `http://localhost:3000`
+2. **Inject file** via browser's input element or by setting the file input to a file path:
+   ```javascript
+   // Playwright example
+   await page.setInputFiles('input[type="file"]', { name: "test.mp4", mimeType: "video/mp4", buffer: fs.readFileSync("test.mp4") });
+   ```
+3. **Select output format** by clicking the format button with text matching the desired extension (e.g., "GIF" or "MP3")
+4. **Click the Convert button** (text: "🔄 Convert")
+5. **Wait for completion** — check for the download button or success message
+6. **Download** via the download link or `page.download` event
+
+### Determining Current State
+
+- **Waiting for input**: Drop zone is visible with "Drag & drop files here"
+- **File loaded**: FilePreview component visible showing file name and size
+- **Engine loading**: Yellow status badge "Loading converter engine..."
+- **Ready**: Green status badge "All processing happens locally"
+- **Converting**: Progress bar visible, button shows "⏳ Converting..."
+- **Done**: Result panel visible with green checkmark and "Download file" button
+- **Error**: Red error banner with "❌" prefix
+
+### Selecting a Format
+
+Format buttons have the extension as visible text (e.g., "PNG", "MP3", "GIF"). Click via text content match.
+
+### Programmatic Notes
+
+- FFmpeg.wasm loads from CDN on first conversion — first call is slow (~5-10s), subsequent calls reuse the loaded instance
+- The app uses a single file at a time (first file from drop is processed)
+- Large files (>500MB) may cause browser memory issues
+- Video-to-GIF conversion produces low-framerate GIFs (10fps, 480px wide)
+- All files are held in browser memory — conversion results are available for download until page refresh
+
+### Example Agent Script (Playwright)
+
+```javascript
+const { chromium } = require('playwright');
+const fs = require('fs');
+
+(async () => {
+  const browser = await chromium.launch();
+  const page = await browser.newPage();
+  await page.goto('http://localhost:3000');
+
+  // Upload a file
+  await page.setInputFiles('input[type="file"]', {
+    name: 'video.mp4',
+    mimeType: 'video/mp4',
+    buffer: fs.readFileSync('/path/to/video.mp4'),
+  });
+
+  // Wait for format selector to appear, then select MP3
+  await page.waitForSelector('button:has-text("MP3")');
+  await page.click('button:has-text("MP3")');
+
+  // Click convert
+  await page.click('button:has-text("Convert")');
+
+  // Wait for completion
+  await page.waitForSelector('text=✅', { timeout: 120000 });
+
+  // Download
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    page.click('text=Download file'),
+  ]);
+  await download.saveAs('/path/to/output.mp3');
+
+  await browser.close();
+})();
+```
