@@ -1,4 +1,4 @@
-import { FormatOption } from '../types';
+import type { FormatOption } from '../types';
 
 interface FormatSelectorProps {
   formats: FormatOption[];
@@ -8,22 +8,21 @@ interface FormatSelectorProps {
 
 export default function FormatSelector({ formats, selected, onSelect }: FormatSelectorProps) {
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-      {formats.map((fmt) => {
-        const isSelected = selected?.extension === fmt.extension;
+    <div className="flex flex-wrap gap-2">
+      {formats.map((format) => {
+        const isSelected = selected?.extension === format.extension;
         return (
           <button
-            key={fmt.extension}
-            onClick={() => onSelect(fmt)}
-            className={`
-              py-3 px-3 rounded-xl text-sm font-medium transition-all duration-200 border
-              ${isSelected
-                ? 'bg-brand-500/20 border-brand-500 text-brand-400 ring-2 ring-brand-500/30'
-                : 'bg-gray-900 border-gray-800 text-gray-400 hover:border-gray-600 hover:text-gray-200'}
-            `}
+            key={format.extension}
+            type="button"
+            onClick={() => onSelect(format)}
+            className={`rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${
+              isSelected
+                ? 'border-brand-500 bg-brand-50 text-brand-700'
+                : 'border-neutral-200 bg-white text-neutral-500 hover:border-neutral-300 hover:text-neutral-800'
+            }`}
           >
-            <div className="text-lg mb-1">{fmt.extension.toUpperCase()}</div>
-            <div className="text-xs text-gray-500">{fmt.label}</div>
+            {format.label}
           </button>
         );
       })}

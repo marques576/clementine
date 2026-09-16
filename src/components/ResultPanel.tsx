@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useEffect, useMemo } from 'react';
 
 interface ResultPanelProps {
   blob: Blob;
@@ -6,28 +6,25 @@ interface ResultPanelProps {
 }
 
 export default function ResultPanel({ blob, fileName }: ResultPanelProps) {
-  const url = useRef(URL.createObjectURL(blob)).current;
+  const url = useMemo(() => URL.createObjectURL(blob), [blob]);
+
+  useEffect(() => {
+    return () => URL.revokeObjectURL(url);
+  }, [url]);
 
   return (
-    <div className="bg-gray-900 rounded-xl p-6 border border-brand-500/30">
-      <div className="flex items-center gap-3 mb-4">
-        <span className="text-2xl">✅</span>
-        <div>
-          <h3 className="font-semibold text-gray-200">Conversion complete</h3>
-          <p className="text-sm text-gray-400">{fileName}</p>
-        </div>
+    <div className="flex items-center justify-between gap-4 rounded-xl border border-brand-300 bg-brand-50 p-3">
+      <div className="min-w-0">
+        <p className="text-sm font-medium text-brand-700">Done</p>
+        <p className="truncate text-xs text-neutral-500">{fileName}</p>
       </div>
       <a
         href={url}
         download={fileName}
-        className="inline-flex items-center gap-2 px-6 py-3 bg-brand-500 hover:bg-brand-600 text-white font-medium rounded-xl transition-colors"
+        className="flex-shrink-0 rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-600"
       >
-        <span>⬇️</span>
-        Download file
+        Download
       </a>
-      <p className="text-xs text-gray-600 mt-3">
-        Processed entirely in your browser. No files were uploaded.
-      </p>
     </div>
   );
 }

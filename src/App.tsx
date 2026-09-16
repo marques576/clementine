@@ -1,161 +1,158 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import DropZone from './components/DropZone';
 import FilePreview from './components/FilePreview';
 import FormatSelector from './components/FormatSelector';
 import ProgressBar from './components/ProgressBar';
 import ResultPanel from './components/ResultPanel';
-import CategoryTabs from './components/CategoryTabs';
-import StatusBadge from './components/StatusBadge';
-import ConversionOptionsHero from './components/ConversionOptionsHero';
-import { CATEGORIES, type Category, type FormatOption } from './types/index';
+import EngineStatus from './components/EngineStatus';
+import AgentInstructions from './components/AgentInstructions';
+import { CATEGORIES } from './types/index';
 import { useFFmpegLoader } from './hooks/useFFmpegLoader';
 import { useConversion } from './hooks/useConversion';
 import { useAppState } from './hooks/useAppState';
 
+// Only these categories need the (heavier) ffmpeg wasm engine.
+const ENGINE_CATEGORIES = new Set(['audio', 'video']);
+
 export default function App() {
-  const { ffmpeg, loading: ffmpegLoading, error: ffmpegError, load: loadFFmpeg } = useFFmpegLoader();
-  const { selectedFile, selectedFormat, activeCategoryTab, setActiveCategoryTab, handleFilesDropped, handleFormatSelect } = useAppState();
+  const { ffmpeg, loading: engineLoading, error: engineError, load: loadEngine } = useFFmpegLoader();
+  const {
+    selectedFile,
+    selectedFormat,
+    outputFormats,
+    handleFilesDropped,
+    handleFormatSelect,
+    reset: resetFile,
+  } = useAppState();
+  const { state, convert, reset: resetConversion, isFFmpegReady } = useConversion({
+    ffmpeg,
+    ffmpegLoading: engineLoading,
+  });
   const [converting, setConverting] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
-  const { state: convState, convert, reset, isFFmpegReady } = useConversion({ ffmpeg, ffmpegLoading });
 
-  // Auto-load FFmpeg on mount
+  const needsEngine = !!selectedFile && ENGINE_CATEGORIES.has(selectedFile.category);
+  const engineReady = !needsEngine || isFFmpegReady;
+
+  // Load the wasm engine only when a file that actually needs it is selected.
   useEffect(() => {
-    loadFFmpeg();
-  }, [loadFFmpeg]);
+    if (needsEngine) void loadEngine();
+  }, [needsEngine, loadEngine]);
 
-  const categoryConfig = useMemo(() => {
-    if (!selectedFile) return null;
-    return CATEGORIES.find((c) => c.category === selectedFile.category);
-  }, [selectedFile]);
-
-  const availableFormats = categoryConfig?.outputFormats || [];
-
-  // When file changes, auto-select first available format
+  // Clear any previous result when the file or target format changes.
   useEffect(() => {
-    if (selectedFile && !selectedFormat && availableFormats.length > 0) {
-      handleFormatSelect(availableFormats[0]);
-    }
-  }, [selectedFile, availableFormats]);
+    resetConversion();
+  }, [selectedFile?.file, selectedFormat, resetConversion]);
 
   const handleConvert = useCallback(async () => {
-    if (!selectedFile || !selectedFormat || converting) return;
+    if (!selectedFile || !selectedFormat || converting || !engineReady) return;
     setConverting(true);
-    setShowSuccess(false);
     await convert(selectedFile.file, selectedFormat);
     setConverting(false);
-  }, [selectedFile, selectedFormat, converting, convert]);
+  }, [selectedFile, selectedFormat, converting, engineReady, convert]);
 
-  // Show success when conversion completes
-  useEffect(() => {
-    if (convState.status === 'done') {
-      setShowSuccess(true);
-    }
-  }, [convState.status]);
+  const handleAnother = useCallback(() => {
+    resetConversion();
+    resetFile();
+  }, [resetConversion, resetFile]);
+
+  const supportText = useMemo(() => {
+    const categories = CATEGORIES.map((c) => c.label.toLowerCase()).join(', ');
+    const outputs = Array.from(
+      new Set(CATEGORIES.flatMap((c) => c.outputFormats.map((f) => f.extension.toUpperCase()))),
+    ).join(' · ');
+    return `Convert ${categories} — ${outputs}.`;
+  }, []);
 
   return (
-    <div className="min-h-screen bg-gray-950">
-      {/* Hero */}
-      <div className="max-w-6xl mx-auto px-4 pt-16 pb-12">
-        <div className="text-center mb-12">
-          <h1 className="text-5xl md:text-6xl font-bold text-white mb-4 tracking-tight">
-            Clementine
-          </h1>
-          <p className="text-lg text-gray-400 max-w-2xl mx-auto">
-            The zero-click, offline file converter. Everything happens <span className="text-brand-400 font-medium">locally in your browser</span>. No uploads, no cloud, no compromises.
-          </p>
-        </div>
+    <div className="flex h-[100dvh] flex-col overflow-hidden bg-neutral-50 text-neutral-900">
+      <main className="flex min-h-0 flex-1 items-center justify-center overflow-y-auto px-5 py-8">
+        {!selectedFile ? (
+          <div className="w-full max-w-md text-center">
+            <h1 className="text-5xl font-bold tracking-tight text-neutral-900">Clementine</h1>
+            <p className="mt-2 text-sm font-medium text-brand-600">100% local conversion</p>
 
-        {/* Drop Zone */}
-        {!selectedFile && (
-          <DropZone onFilesDropped={handleFilesDropped} disabled={converting} />
-        )}
+            <div className="mt-8">
+              <DropZone onFilesDropped={handleFilesDropped} />
+            </div>
 
-        {/* File Selected */}
-        {selectedFile && categoryConfig && (
-          <div className="space-y-6">
-            {/* Category tabs */}
-            <CategoryTabs
-              categories={CATEGORIES}
-              selectedCategory={activeCategoryTab}
-              onSelect={setActiveCategoryTab}
-            />
+            <p className="mt-6 text-xs leading-relaxed text-neutral-500">{supportText}</p>
 
-            {/* File Preview + Format Selector */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-3">
-                <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider">Input file</h3>
-                <FilePreview file={selectedFile.file} />
-              </div>
-              <div className="space-y-3">
-                <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider">Convert to ({categoryConfig.label})</h3>
+            <AgentInstructions />
+          </div>
+        ) : (
+          <div className="w-full max-w-lg">
+            <div className="mb-5 text-center">
+              <h1 className="text-2xl font-bold tracking-tight text-neutral-900">Clementine</h1>
+              <p className="text-xs font-medium text-brand-600">100% local conversion</p>
+            </div>
+
+            <div className="space-y-4 rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm">
+              <FilePreview file={selectedFile.file} />
+
+              <div>
+                <p className="mb-2 text-xs uppercase tracking-wider text-neutral-500">Convert to</p>
                 <FormatSelector
-                  formats={availableFormats}
+                  formats={outputFormats}
                   selected={selectedFormat}
                   onSelect={handleFormatSelect}
                 />
               </div>
-            </div>
 
-            {/* Actions */}
-            <div className="flex items-center gap-4">
-              <button
-                onClick={handleConvert}
-                disabled={!selectedFormat || converting || !isFFmpegReady}
-                className="px-8 py-3 bg-brand-500 hover:bg-brand-600 disabled:bg-gray-700 disabled:text-gray-500 text-white font-semibold rounded-xl transition-all duration-200 text-lg"
-              >
-                {converting ? '⏳ Converting...' : !isFFmpegReady ? '⏳ Loading engine...' : '🔄 Convert'}
-              </button>
-              <button
-                onClick={() => { reset(); setShowSuccess(false); }}
-                className="px-4 py-3 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-xl transition-colors"
-              >
-                🗑️ Reset
-              </button>
-            </div>
+              {needsEngine && (
+                <EngineStatus
+                  loading={engineLoading}
+                  error={engineError}
+                  ready={isFFmpegReady}
+                  onRetry={() => void loadEngine()}
+                />
+              )}
 
-            {/* Progress */}
-            {converting && (
-              <div className="pt-4">
-                <ProgressBar progress={convState.progress} status="Converting..." />
-              </div>
-            )}
-
-            {/* Error */}
-            {convState.status === 'error' && (
-              <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4">
-                <p className="text-red-400">❌ {convState.error}</p>
+              <div className="flex gap-2">
                 <button
-                  onClick={reset}
-                  className="mt-2 text-sm text-red-300 hover:text-red-200 underline"
+                  type="button"
+                  onClick={handleConvert}
+                  disabled={!selectedFormat || converting || !engineReady || state.status === 'done'}
+                  className="flex-1 rounded-xl bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-600 disabled:cursor-not-allowed disabled:bg-neutral-200 disabled:text-neutral-400"
                 >
-                  Try again
+                  {converting
+                    ? 'Converting…'
+                    : needsEngine && !engineReady
+                      ? 'Loading engine…'
+                      : 'Convert'}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleAnother}
+                  disabled={converting}
+                  className="rounded-xl border border-neutral-200 bg-white px-4 py-2.5 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-100 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Another file
                 </button>
               </div>
-            )}
 
-            {/* Result */}
-            {convState.status === 'done' && convState.outputBlob && convState.outputName && showSuccess && (
-              <div className="pt-4">
-                <ResultPanel blob={convState.outputBlob} fileName={convState.outputName} />
-              </div>
-            )}
+              {converting && <ProgressBar progress={state.progress} />}
+
+              {state.status === 'done' && state.outputBlob && state.outputName && (
+                <ResultPanel blob={state.outputBlob} fileName={state.outputName} />
+              )}
+
+              {state.status === 'error' && (
+                <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600">
+                  {state.error}
+                </div>
+              )}
+            </div>
+
+            <p className="mt-5 text-center text-xs leading-relaxed text-neutral-400">
+              {supportText}
+            </p>
           </div>
         )}
+      </main>
 
-        {/* Privacy status */}
-        <div className="mt-12 max-w-lg mx-auto">
-          <StatusBadge ffmpegLoading={ffmpegLoading} ffmpegError={ffmpegError} />
-        </div>
-
-        {/* Supported formats grid */}
-        <ConversionOptionsHero />
-
-        {/* Footer */}
-        <footer className="mt-20 pt-8 border-t border-gray-900 text-center text-gray-600 text-sm">
-          <p>Clementine — Open source local file converter · No server, no cloud, no tracking</p>
-        </footer>
-      </div>
+      <footer className="shrink-0 pb-4 text-center text-[11px] text-neutral-400">
+        Your files never leave your device · No uploads · No servers · No tracking
+      </footer>
     </div>
   );
 }

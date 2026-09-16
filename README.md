@@ -4,22 +4,21 @@ Clementine is an open-source alternative to Tangerine for Mac. It's a browser-ba
 
 ## Features
 
-- **Drag & drop** file conversion
-- **Images**: Convert between PNG, JPEG, WebP, AVIF, BMP, TIFF, SVG, GIF
-- **Audio**: Convert between MP3, M4A, WAV, FLAC, OGG, Opus (via FFmpeg.wasm)
-- **Video**: Convert between MP4, MOV, MKV, WebM, AVI, WMV, GIF; extract audio to MP3
-- **Documents**: PDF/DOCX/TXT conversion and PDF to images
-- **Subtitles**: SRT, VTT, TXT conversion
-- **Archives**: ZIP, TAR, GZIP conversion
-- **Privacy**: All processing happens locally in the browser using WebAssembly
-- **No install**: Runs as a web app, no downloads required
-- **Open source**: MIT licensed
+- **Open or drag & drop** a file, pick a format, convert
+- **Images**: PNG, JPG, WEBP (Canvas API)
+- **Audio**: MP3, M4A, WAV, FLAC, OGG, OPUS (FFmpeg.wasm)
+- **Video**: MP4, MOV, MKV, WEBM, GIF, and audio extraction to MP3 (FFmpeg.wasm)
+- **Documents**: PDF → TXT / PNG / JPG, DOCX → TXT, TXT → PDF (pdf.js + JSZip)
+- **Subtitles**: SRT, VTT, TXT
+- **Privacy**: all processing happens locally; files never leave the device
+- **No install**: runs as a static web app
+- **Agent friendly**: see [`instructions.md`](public/instructions.md) and [`llms.txt`](public/llms.txt)
 
 ## Screenshots
 
 ### Landing Page — Drag & Drop
 
-![Landing page with drag and drop zone](screenshot-dropzone.png)
+![Landing page with drag and drop zone](screenshot.png)
 
 Drop any file onto the page to begin converting. No accounts, no uploads — everything runs in your browser.
 
@@ -27,19 +26,20 @@ Drop any file onto the page to begin converting. No accounts, no uploads — eve
 
 - Vite + React + TypeScript
 - Tailwind CSS
-- FFmpeg.wasm (for audio/video/document conversions)
-- Canvas API (for image conversions)
-- All processing runs via WebAssembly in the browser
+- FFmpeg.wasm (audio/video), Canvas API (images), pdf.js (PDF), JSZip (DOCX/images)
+
+All conversion happens client-side. The FFmpeg engine is vendored under
+`public/ffmpeg` (single-threaded) and `public/ffmpeg-mt` (multithreaded), so no
+CDN request is ever made.
 
 ## Setup & Run
 
 ```bash
-cd clementine
 npm install
 npm run dev
 ```
 
-The app serves on `http://localhost:3001`.
+The app serves on `http://localhost:3000`.
 
 ## Building for Production
 
@@ -50,9 +50,27 @@ npm run build
 Output is in `dist/` — deploy anywhere (static host, CDN, etc.). To preview the production build locally:
 
 ```bash
-cd dist && python3 -m http.server 3001
+npm run preview
 ```
 
-## Agent API
+### Cross-origin isolation (optional, recommended)
 
-See `/llm.txt` for programmatic access instructions for AI agents. Agents can automate file drops, format selection, and downloads via Playwright/Puppeteer DOM interaction.
+The multithreaded FFmpeg core is used automatically when the page is
+cross-origin isolated. Serve these headers to enable it:
+
+```
+Cross-Origin-Opener-Policy: same-origin
+Cross-Origin-Embedder-Policy: require-corp
+```
+
+The dev and preview servers already send them. If a host does not, the app
+transparently falls back to the single-threaded core — no configuration needed.
+
+## Agent access
+
+- `/instructions.md` — how to drive the site with a headless browser (Playwright),
+  including stable selectors and a full example
+- `/llms.txt` — machine-readable index of supported conversions and endpoints
+
+Agents can also automate file drops, format selection, and downloads via
+Playwright/Puppeteer DOM interaction.

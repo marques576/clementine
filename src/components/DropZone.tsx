@@ -9,6 +9,10 @@ export default function DropZone({ onFilesDropped, disabled }: DropZoneProps) {
   const [dragOver, setDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const openPicker = useCallback(() => {
+    if (!disabled) inputRef.current?.click();
+  }, [disabled]);
+
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -33,40 +37,34 @@ export default function DropZone({ onFilesDropped, disabled }: DropZoneProps) {
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (files.length > 0) onFilesDropped(files);
+    e.target.value = '';
   }, [onFilesDropped]);
 
   return (
     <div
-      className={`
-        relative border-2 border-dashed rounded-2xl p-16 text-center cursor-pointer
-        transition-all duration-300 min-h-[300px] flex flex-col items-center justify-center
-        ${dragOver
-          ? 'border-brand-400 bg-brand-400/10 scale-[1.02]'
-          : 'border-gray-700 bg-gray-900/50 hover:border-gray-600 hover:bg-gray-900'}
-        ${disabled ? 'opacity-40 cursor-not-allowed' : ''}
-      `}
+      role="button"
+      tabIndex={0}
+      aria-label="Open a file"
+      onClick={openPicker}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          openPicker();
+        }
+      }}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      onClick={() => !disabled && inputRef.current?.click()}
+      className={`cursor-pointer rounded-2xl border-2 border-dashed px-6 py-10 text-center transition-colors duration-200 ${
+        dragOver
+          ? 'border-brand-500 bg-brand-50'
+          : 'border-neutral-300 bg-white hover:border-neutral-400'
+      } ${disabled ? 'pointer-events-none opacity-50' : ''}`}
     >
-      <input
-        ref={inputRef}
-        type="file"
-        multiple
-        className="hidden"
-        onChange={handleInputChange}
-      />
-      <div className="text-6xl mb-6">📂</div>
-      <h3 className="text-xl font-semibold text-gray-200 mb-2">
-        Drag & drop files here
-      </h3>
-      <p className="text-gray-400 max-w-md">
-        or click to browse. Everything is processed locally in your browser — nothing leaves your device.
-      </p>
-      {disabled && (
-        <p className="text-brand-400 mt-4 text-sm">Processing...</p>
-      )}
+      <input ref={inputRef} type="file" className="hidden" onChange={handleInputChange} />
+      <div className="mb-2 text-3xl">📂</div>
+      <p className="font-medium text-neutral-800">Drop a file here</p>
+      <p className="mt-1 text-sm text-neutral-500">or click to browse</p>
     </div>
   );
 }

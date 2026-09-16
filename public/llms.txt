@@ -1,0 +1,35 @@
+# Clementine
+
+> Clementine is a 100% client-side file converter. Images, audio, video,
+> documents and subtitles are converted entirely in the browser using Canvas,
+> WebCodecs (where available) and FFmpeg compiled to WebAssembly. No file is
+> ever uploaded, and there is no server-side API.
+
+Base URL: https://YOUR-DOMAIN.com
+
+## Agent instructions
+
+- [instructions.md](https://YOUR-DOMAIN.com/instructions.md): how to drive the
+  site with a headless browser (Playwright) to convert files, including stable
+  selectors and a complete example.
+
+## Supported conversions
+
+- Images: `.jpg` `.jpeg` `.png` `.webp` `.gif` `.bmp` `.avif` → PNG, JPG, WEBP
+- Audio: `.mp3` `.m4a` `.wav` `.flac` `.ogg` `.opus` `.aac` `.aiff` `.wma` →
+  MP3, M4A, WAV, FLAC, OGG, OPUS
+- Video: `.mp4` `.mov` `.mkv` `.webm` `.avi` `.wmv` → MP4, MOV, MKV, WEBM, GIF,
+  MP3
+- Documents: `.pdf` `.docx` `.txt` → TXT, PDF, PNG pages, JPG pages
+- Subtitles: `.srt` `.vtt` → SRT, VTT, TXT
+
+## Usage
+
+There is no HTTP endpoint. Automate the UI with a headless browser; see
+[instructions.md](https://YOUR-DOMAIN.com/instructions.md) for a working
+Playwright example and the list of stable selectors.
+
+## Privacy
+
+All processing happens locally in the browser. Files never leave the user's
+device and no analytics or tracking are used.

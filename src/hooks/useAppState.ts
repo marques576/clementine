@@ -1,7 +1,7 @@
-import { useCallback, useState } from 'react';
-import type { Category, FormatOption } from '../types';
+import { useCallback, useMemo, useState } from 'react';
+import { getCategoryForFile, getOutputFormats, type Category, type FormatOption } from '../types';
 
-interface SelectedFile {
+export interface SelectedFile {
   file: File;
   category: Category;
 }
@@ -9,47 +9,39 @@ interface SelectedFile {
 export function useAppState() {
   const [selectedFile, setSelectedFile] = useState<SelectedFile | null>(null);
   const [selectedFormat, setSelectedFormat] = useState<FormatOption | null>(null);
-  const [activeCategoryTab, setActiveCategoryTab] = useState<string>('all');
+
+  const outputFormats = useMemo(
+    () => (selectedFile ? getOutputFormats(selectedFile.file.name) : []),
+    [selectedFile],
+  );
 
   const handleFilesDropped = useCallback((files: File[]) => {
-    if (files.length === 0) return;
     const file = files[0];
-    const ext = '.' + file.name.split('.').pop()!.toLowerCase();
+    if (!file) return;
 
-    // Find matching category
-    let category: Category | null = null;
-    for (const cat of [
-      { cat: 'image' as Category, exts: ['.jpg','.jpeg','.png','.webp','.heic','.heif','.tiff','.tif','.svg','.bmp','.avif','.gif'] },
-      { cat: 'audio' as Category, exts: ['.mp3','.m4a','.wav','.flac','.ogg','.opus','.aiff','.wma'] },
-      { cat: 'video' as Category, exts: ['.mp4','.mov','.mkv','.webm','.avi','.wmv','.gif'] },
-      { cat: 'document' as Category, exts: ['.pdf','.docx','.txt'] },
-      { cat: 'subtitle' as Category, exts: ['.srt','.vtt','.txt'] },
-      { cat: 'archive' as Category, exts: ['.zip','.tar','.gz','.gzip','.rar'] },
-    ]) {
-      if (cat.exts.includes(ext)) {
-        category = cat.cat;
-        break;
-      }
-    }
+    const category = getCategoryForFile(file.name);
+    if (!category) return;
 
-    if (category) {
-      setSelectedFile({ file, category });
-    } else {
-      setSelectedFile({ file, category: 'document' });
-    }
-    setSelectedFormat(null);
+    setSelectedFile({ file, category });
+    const formats = getOutputFormats(file.name);
+    setSelectedFormat(formats[0] ?? null);
   }, []);
 
   const handleFormatSelect = useCallback((format: FormatOption) => {
     setSelectedFormat(format);
   }, []);
 
+  const reset = useCallback(() => {
+    setSelectedFile(null);
+    setSelectedFormat(null);
+  }, []);
+
   return {
     selectedFile,
     selectedFormat,
-    activeCategoryTab,
-    setActiveCategoryTab,
+    outputFormats,
     handleFilesDropped,
     handleFormatSelect,
+    reset,
   };
 }
