@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import { getExtension } from '../types';
 
 interface FilePreviewProps {
@@ -19,16 +19,18 @@ function iconFor(ext: string): string {
 export default function FilePreview({ file }: FilePreviewProps) {
   const ext = getExtension(file.name);
   const isImage = IMAGE_EXTENSIONS.includes(ext);
-  const previewUrl = useMemo(
-    () => (isImage ? URL.createObjectURL(file) : null),
-    [file, isImage],
-  );
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
+  // Created in the effect so StrictMode's remount does not leave a revoked URL.
   useEffect(() => {
-    return () => {
-      if (previewUrl) URL.revokeObjectURL(previewUrl);
-    };
-  }, [previewUrl]);
+    if (!isImage) {
+      setPreviewUrl(null);
+      return;
+    }
+    const objectUrl = URL.createObjectURL(file);
+    setPreviewUrl(objectUrl);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [file, isImage]);
 
   const size = file.size < 1024 * 1024
     ? `${(file.size / 1024).toFixed(0)} KB`
