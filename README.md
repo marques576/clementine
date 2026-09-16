@@ -4,7 +4,7 @@ Clementine is an open-source alternative to Tangerine for Mac. It's a browser-ba
 
 ## Features
 
-- **Open or drag & drop** a file, pick a format, convert
+- **Open, drag & drop, or paste** (Ctrl/⌘+V) a file, pick a format, convert
 - **Images**: PNG, JPG, WEBP (Canvas API)
 - **Audio**: MP3, M4A, WAV, FLAC, OGG, OPUS (FFmpeg.wasm)
 - **Video**: MP4, MOV, MKV, WEBM, GIF, and audio extraction to MP3 (FFmpeg.wasm)

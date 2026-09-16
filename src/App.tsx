@@ -43,6 +43,32 @@ export default function App() {
     resetConversion();
   }, [selectedFile?.file, selectedFormat, resetConversion]);
 
+  // Support pasting a file or image straight onto the page (Ctrl/Cmd+V).
+  useEffect(() => {
+    const handlePaste = (event: ClipboardEvent) => {
+      if (converting) return;
+      const items = event.clipboardData?.items;
+      if (!items) return;
+
+      const files: File[] = [];
+      for (let i = 0; i < items.length; i += 1) {
+        const item = items[i];
+        if (item.kind === 'file') {
+          const file = item.getAsFile();
+          if (file) files.push(file);
+        }
+      }
+
+      if (files.length > 0) {
+        event.preventDefault();
+        handleFilesDropped(files);
+      }
+    };
+
+    window.addEventListener('paste', handlePaste);
+    return () => window.removeEventListener('paste', handlePaste);
+  }, [converting, handleFilesDropped]);
+
   const handleConvert = useCallback(async () => {
     if (!selectedFile || !selectedFormat || converting || !engineReady) return;
     setConverting(true);
